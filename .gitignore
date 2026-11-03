@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.release-staging/
+*.zip
+device.json*
+data.json
+.env
+.env.*
+*.log
+*.wav
+*.m4a
+backups/
+*.zip
+.DS_Store
