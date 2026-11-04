@@ -1,49 +1,55 @@
 # Voice Diary Recorder
 
-在 Obsidian 中录音并保存原始音频，配合电脑端 [Voice Diary Processor](https://github.com/jem-code-sss/obsidian-voice-diary) 本地转写。版本 **0.3.0**。
+English | [简体中文](README.zh-CN.md)
 
-手机只需要 Obsidian、本插件和仓库同步工具。无需 Python、语音模型或 API Key。电脑端另行安装处理插件并准备识别模型；如只需要保存录音，也可以独立使用。
+Record audio in Obsidian and save the original files to your vault. Use the companion [Voice Diary Processor](https://github.com/jem-code-sss/obsidian-voice-diary) on a Windows computer for local transcription. Current version: **0.3.1**.
 
-## 需要安装什么
+On your phone, you only need Obsidian and this plugin. No Python, speech model, or API key is needed. A vault sync tool is optional when you want to send recordings to a computer. You can also use the recorder on its own to save audio.
 
-| 设备 | 安装的软件 |
+## Required software
+
+| Device or use | Software |
 | --- | --- |
-| 手机 | Obsidian、Voice Diary Recorder；手机电脑联用时还需 Syncthing 兼容客户端或另一种仓库同步工具。 |
-| 电脑 | Obsidian、Voice Diary Processor、手动准备的 Python 与 SenseVoice 本地环境；使用 Syncthing 流程时安装电脑 Syncthing。 |
-| 仅独立录音 | 只需 Obsidian 和本插件，不需要同步、Python、模型或 API。 |
+| Phone | Obsidian and Voice Diary Recorder. To transfer recordings to a computer, also use a Syncthing-compatible client, Obsidian Sync, or another vault sync tool. |
+| Windows computer for transcription | Obsidian, Voice Diary Processor, and a manually prepared Python and SenseVoice environment. Install desktop Syncthing if you choose that sync workflow. |
+| Recording only | Obsidian and this plugin. No sync service, Python, model, or API is required. |
 
-完整的同步目录与软件准备步骤见电脑项目的 [安装与同步教程](https://github.com/jem-code-sss/obsidian-voice-diary/blob/main/docs/SETUP.md)。同步工具只搬运文件，不负责识别。
+See the Processor project's [installation and sync guide](https://github.com/jem-code-sss/obsidian-voice-diary/blob/main/docs/SETUP.md) for manual dependency setup, software downloads, and matching the phone and computer folders. Sync tools transfer files; the Processor performs transcription on the computer.
 
-## 安装
+## Installation
 
-目前提供手动安装包；插件市场的审核与收录状态以官方页面为准。
+The plugin is published in the [official Obsidian community directory](https://community.obsidian.md/plugins/voice-diary-recorder). See that page for its current review status. Manual installation packages are also available.
 
-1. 从 [0.3.0 Release](https://github.com/jem-code-sss/obsidian-voice-diary-recorder/releases/tag/0.3.0) 下载 `voice-diary-recorder-v0.3.0.zip` 并解压。
-2. 将 `voice-diary-recorder` 文件夹放入仓库的 `.obsidian/plugins/`，保持 `main.js`、`manifest.json`、`styles.css` 在该文件夹内。使用自定义配置目录时选择对应的 `plugins` 目录。
-3. 重启 Obsidian，在第三方插件设置中启用 **Voice Diary Recorder**。
-4. 在插件设置中应用录音保存目录。新装默认 `Voice Diary/Recordings`；请与电脑处理插件的录音目录保持一致。
+1. Download `voice-diary-recorder-v0.3.1.zip` from the [0.3.1 release](https://github.com/jem-code-sss/obsidian-voice-diary-recorder/releases/tag/0.3.1) and extract it.
+2. Put the `voice-diary-recorder` folder in your vault's `.obsidian/plugins/` directory. Keep `main.js`, `manifest.json`, and `styles.css` directly inside that folder. If you use a custom Obsidian configuration directory, use its `plugins` directory instead.
+3. Restart Obsidian and enable **Voice Diary Recorder** in Community plugins.
+4. In the plugin settings, apply the recording folder. New installations default to `Voice Diary/Recordings`. Use the same recording folder in the computer's Processor settings.
 
-从旧版手机录音功能升级时，若本插件尚无本机设置，会仅尝试沿用旧版的合法录音目录；不迁移 Key、任务或其他配置。已有本插件设置不会被覆盖。请停用旧插件的录音入口，避免出现两个麦克风按钮。
+### Upgrading from the old combined plugin
 
-## 录音与同步
+Install Recorder on your phone first and confirm that its recording folder matches your existing folder. If Recorder has no settings on this device yet, it only attempts to reuse a valid recording folder from the old mobile plugin. It does not migrate keys, jobs, or other settings, and it does not overwrite existing Recorder settings.
 
-点击手机悬浮麦克风、侧边栏麦克风，或执行「开始／停止录音」命令。再次点击结束，插件保存原始音频。文件名自动生成，扩展名与设备实际提供的录音格式匹配。
+After confirming the phone folder and sync, upgrade the computer to Voice Diary Processor. Disable the old mobile recording entry to avoid having two microphone buttons.
 
-录音目录支持中文、空格和多级路径，须填写仓库内的相对目录。输入后点击「应用」才生效，不会移动历史录音；录音中或音频待保存时不能更改目录。
+## Recording and sync
 
-手机录音时请保持 Obsidian 在前台。切后台、锁屏或麦克风中断时结束本段并尝试保存，提示约 4 秒后消失。返回前台不会自动重新收音，请重新点击麦克风。系统冻结或强杀可能来不及保存，本插件不支持后台持续录音。
+Tap the floating microphone on mobile, use the ribbon microphone, or run the start/stop recording command. Tap again to stop and save the original audio. Filenames are generated automatically, and the extension matches the recording format provided by your device.
 
-停止后如保存失败，音频保留在当前插件内存中。请保留 Obsidian 窗口，修复存储空间或目录权限，再点击麦克风或「重试保存录音」。退出应用、重载或停用插件可能丢失未保存音频；关闭时仅能尽力保存。
+The recording folder must be a relative path inside the vault. Chinese characters, spaces, and nested folders are supported. Click the settings button to apply a new folder. Applying a folder does not move existing recordings, and the folder cannot be changed while recording or while audio is waiting to be saved.
 
-可使用 Syncthing、Obsidian Sync 或其他仓库同步工具。插件本身不提供同步服务，也不依赖特定工具。先确认手机音频已保存，再等待同步到电脑；电脑处理端应监听同一录音目录，并只在一台电脑开启自动处理。
+Keep Obsidian in the foreground while recording on a phone. Switching apps, locking the screen, or losing microphone access ends the current segment and triggers a save attempt. The interruption notice disappears after about four seconds. Returning to the foreground does not restart recording; tap the microphone to start a new segment. If the operating system freezes or force-closes Obsidian, saving may not be possible. Continuous background recording is not supported.
 
-## 隐私
+If saving fails after recording stops, the audio stays in the plugin's memory. Keep Obsidian open, resolve the storage or folder permission problem, and tap the microphone or run the retry-save command. Quitting Obsidian, reloading, or disabling the plugin can lose unsaved audio. Saving during shutdown is best effort.
 
-插件没有联网接口、模型下载或转写功能，不调用 API。录音文件位于你选择的仓库目录，会受仓库同步与备份规则影响。录音目录设置保存在 Obsidian 本设备存储中。详细说明见 [PRIVACY.md](PRIVACY.md)。
+You may use Syncthing, Obsidian Sync, or another vault sync tool. The plugin provides no sync service and does not depend on a specific tool. Confirm that the phone has saved the audio, then wait for it to sync to the computer. The computer's Processor should watch the same recording folder. Enable automatic processing on only one computer.
 
-## 开发
+## Privacy
 
-使用 Node.js 22 或更新版本，在项目根目录执行：
+This plugin has no network requests, model downloads, or transcription feature, and does not call an API. Recordings are stored in the vault folder you choose and follow your vault's sync and backup rules. The recording folder setting is stored in Obsidian's local storage on the current device. See [PRIVACY.md](PRIVACY.md) for details.
+
+## Development and feedback
+
+Use Node.js 22 or later. From the project root, run:
 
 ```powershell
 npm ci
@@ -51,8 +57,10 @@ npm test
 npm run build
 ```
 
-输出目录为 `dist/voice-diary-recorder/`。运行源码只依赖 Obsidian 和浏览器录音 API，不导入 Node.js 或 Electron；构建与合成测试在 Node.js 中运行。测试验证编译产物的手机路径、权限等待时离开前台、重复中断、保存失败重试、目标文件校验及目录应用，不使用真实麦克风或私人音频。
+Build output is written to `dist/voice-diary-recorder/`. At runtime, the plugin uses Obsidian and browser recording APIs; it does not import Node.js or Electron. Builds and simulated tests run in Node.js. Tests cover the compiled mobile path, leaving the foreground while waiting for microphone permission, repeated interruptions, save retries, destination file checks, and applying a folder. They do not use a real microphone or private audio.
 
-不同手机系统的麦克风权限、前后台行为和录音格式可能不同。首次使用请录一小段并回放，再验证自己的同步流程。反馈时请在 [Issues](https://github.com/jem-code-sss/obsidian-voice-diary-recorder/issues) 提供版本、系统与复现步骤，避免附带私人录音和完整个人路径。
+Microphone permissions, foreground/background behavior, and recording formats vary by phone and operating system. Start with a short recording, play it back, and verify your sync workflow. Report problems through [Issues](https://github.com/jem-code-sss/obsidian-voice-diary-recorder/issues) with the plugin version, operating system, and steps to reproduce. Avoid attaching private recordings or full personal paths.
 
-采用 [MIT 许可](LICENSE)。构建工具 [esbuild](https://github.com/evanw/esbuild) 采用 MIT 许可，由开发者自行安装，不包含在插件运行包中。Obsidian 是外部运行宿主。
+## License
+
+This project uses the [MIT license](LICENSE). The build tool [esbuild](https://github.com/evanw/esbuild) is also MIT-licensed; developers install it separately, and it is not included in the plugin runtime package. Obsidian is the external host application.
