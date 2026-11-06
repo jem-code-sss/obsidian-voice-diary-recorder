@@ -1,7 +1,7 @@
 {
   "id": "voice-diary-recorder",
   "name": "Voice Diary Recorder",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "minAppVersion": "1.8.7",
   "description": "Record audio into a configurable vault folder. Pair with a desktop processor for optional local transcription.",
   "author": "jem-code-sss",

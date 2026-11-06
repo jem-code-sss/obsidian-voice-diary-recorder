@@ -101,20 +101,34 @@ module.exports=class VoiceDiaryRecorder extends Plugin{
   }
   async commitRecording(){
     const pending=this.pendingAudio;
+    pending.recordedAt??=Date.now();
     try{
       const folder=await ensureFolder(this.app.vault,this.recordFolder||this.settings.folder);
       const bytes=await pending.blob.arrayBuffer();
       if(!bytes.byteLength)throw new DiaryError('empty','录音为空，请检查麦克风');
-      pending.path||=`${folder}/${recordingName(pending.ext)}`;
-      let file=this.app.vault.getAbstractFileByPath(pending.path);
+      let file;
+      // A failed write or a sync conflict may leave a different file at the
+      // pinned path. Keep that file and save the pending audio under a new name.
+      for(let attempt=0;attempt<3;attempt++){
+        pending.path||=`${folder}/${recordingName(pending.ext,pending.recordedAt)}`;
+        file=this.app.vault.getAbstractFileByPath(pending.path);
+        if(!file)break;
+        let matches=false;
+        if(!Array.isArray(file.children)){
+          try{matches=equalBytes(await this.app.vault.readBinary(file),bytes);}catch{}
+        }
+        if(matches)break;
+        pending.path=null;pending.recovered=true;
+      }
+      if(!pending.path)throw new DiaryError('save','无法分配新的录音文件名，音频仍在内存；请保留窗口并重试保存');
       if(!file){
         try{file=await this.app.vault.createBinary(pending.path,bytes);}
         catch(error){file=this.app.vault.getAbstractFileByPath(pending.path);if(!file)throw error;}
       }
       if(Array.isArray(file.children)||!equalBytes(await this.app.vault.readBinary(file),bytes))
-        throw new DiaryError('save','目标文件已存在或保存校验失败，录音仍在内存；请保留窗口并重试');
+        throw new DiaryError('save','录音保存校验失败，音频仍在内存；请重试保存，原目标内容不一致时会自动另存新文件');
       if(this.pendingAudio===pending)this.pendingAudio=null;
-      new Notice(`录音已保存${pending.interruption?`；${pending.interruption}，本段已结束`:''}${pending.partial?'；末尾可能不完整':''}`,4000);
+      new Notice(`录音已保存${pending.recovered?'；已另存新文件，原目标已保留':''}${pending.interruption?`；${pending.interruption}，本段已结束`:''}${pending.partial?'；末尾可能不完整':''}`,4000);
     }catch(error){
       new Notice('录音尚未保存，音频仍在内存。请检查目录权限并重试保存，暂勿退出 Obsidian',12000);throw error;
     }

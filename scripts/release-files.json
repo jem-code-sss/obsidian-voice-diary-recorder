@@ -1,8 +1,23 @@
 {
   "source": [
-    ".gitignore", "LICENSE", "README.md", "README.zh-CN.md", "PRIVACY.md", "VALIDATION.md",
-    "manifest.json", "versions.json", "package.json", "package-lock.json", "styles.css",
-    "src/main.js", "src/recorder.js", "src/helpers.js",
-    "scripts/build.mjs", "scripts/package.ps1", "scripts/release-files.json", "tests/recorder.test.cjs"
+    ".gitignore",
+    "LICENSE",
+    "README.md",
+    "README.zh-CN.md",
+    "PRIVACY.md",
+    "VALIDATION.md",
+    "manifest.json",
+    "versions.json",
+    "package.json",
+    "package-lock.json",
+    "styles.css",
+    "src/main.js",
+    "src/recorder.js",
+    "src/helpers.js",
+    "scripts/build.mjs",
+    "scripts/package.ps1",
+    "scripts/release-files.json",
+    "tests/recorder.test.cjs",
+    "tests/recording-time.test.cjs"
   ]
 }

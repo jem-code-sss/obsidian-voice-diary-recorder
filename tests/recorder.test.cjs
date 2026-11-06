@@ -44,7 +44,7 @@ function host(options={}){
   const vault={
     getAbstractFileByPath:name=>files.get(name),
     async createFolder(name){if(controls.folderFailure)throw Error('directory denied');const existing=files.get(name);if(existing)throw Error('exists');files.set(name,{path:name,children:[]});},
-    async createBinary(name,bytes){created++;if(controls.writeFailure)throw Error('disk full');if(files.has(name))throw Error('exists');const file={path:name,name:name.split('/').pop(),data:bytes};files.set(name,file);if(controls.writeThenReject)throw Error('written, reply rejected');return file;},
+    async createBinary(name,bytes){created++;if(controls.writeFailure)throw Error('disk full');if(files.has(name))throw Error('exists');const file={path:name,name:name.split('/').pop(),data:controls.partialWrite?bytes.slice(0,3):bytes};files.set(name,file);if(controls.partialWrite)throw Error('interrupted after partial write');if(controls.writeThenReject)throw Error('written, reply rejected');return file;},
     async readBinary(file){return controls.readMismatch?new Uint8Array([1]).buffer:file.data;}
   };
   const app={vault,
@@ -124,10 +124,36 @@ test('concurrent save callers share one operation and keep the one pinned path',
   const first=h.p.saveRecording(),second=h.p.saveRecording();assert.equal(first,second);await first;
   assert.equal(h.counts().created,1);assert.equal(audioFiles(h).length,1);
 });
-test('existing unrelated target is never overwritten and the pending recording survives',async()=>{
+test('existing unrelated target is preserved and the recording automatically saves to a fresh path',async()=>{
   const h=host();await h.open();const target='Voice Diary/Recordings/existing.webm',bytes=new TextEncoder().encode('keep').buffer;
   h.files.set(target,{path:target,name:'existing.webm',data:bytes});h.p.pendingAudio={path:target,blob:new Blob(['different audio']),ext:'webm'};
-  await assert.rejects(h.p.saveRecording());assert.ok(h.p.pendingAudio);assert.equal(new TextDecoder().decode(h.files.get(target).data),'keep');assert.equal(h.counts().created,0);
+  await h.p.saveRecording();assert.equal(h.p.pendingAudio,null);assert.equal(new TextDecoder().decode(h.files.get(target).data),'keep');assert.equal(h.counts().created,1);
+  const recovered=audioFiles(h).find(file=>file.path!==target);assert.equal(new TextDecoder().decode(recovered.data),'different audio');
+  assert.ok(h.notices.some(message=>message.includes('已另存新文件，原目标已保留')));
+});
+test('retry after a partial write preserves the incomplete file and saves the full pending recording under a new name',async()=>{
+  const h=host({partialWrite:true});await h.open();await h.p.toggleRecording();await h.p.toggleRecording();await settle(h.p);
+  const pending=h.p.pendingAudio,target=pending.path,original=await pending.blob.text();
+  assert.equal(h.files.get(target).data.byteLength,3);assert.equal(await pending.blob.text(),original);
+  h.controls.partialWrite=false;await h.p.saveRecording();
+  assert.equal(h.p.pendingAudio,null);assert.equal(h.files.get(target).data.byteLength,3);assert.equal(audioFiles(h).length,2);
+  const recovered=audioFiles(h).find(file=>file.path!==target);assert.equal(new TextDecoder().decode(recovered.data),original);
+  assert.equal(h.counts().started,1);assert.ok(h.notices.some(message=>message.includes('已另存新文件，原目标已保留')));
+});
+test('another interrupted recovery keeps the full in-memory recording for a later successful retry',async()=>{
+  const h=host({partialWrite:true});await h.open();h.p.pendingAudio={blob:new Blob(['complete pending recording']),ext:'webm'};
+  await assert.rejects(h.p.saveRecording());const first=h.p.pendingAudio.path;
+  await assert.rejects(h.p.saveRecording());const second=h.p.pendingAudio.path;
+  assert.notEqual(first,second);assert.equal(await h.p.pendingAudio.blob.text(),'complete pending recording');
+  assert.equal(h.files.get(first).data.byteLength,3);assert.equal(h.files.get(second).data.byteLength,3);
+  h.controls.partialWrite=false;await h.p.saveRecording();assert.equal(h.p.pendingAudio,null);assert.equal(audioFiles(h).length,3);
+  const recovered=audioFiles(h).find(file=>file.path!==first&&file.path!==second);assert.equal(new TextDecoder().decode(recovered.data),'complete pending recording');
+});
+test('a directory at the old target is retained while the pending recording saves under a fresh filename',async()=>{
+  const h=host();await h.open();const target='Voice Diary/Recordings/occupied.webm',directory={path:target,children:[]};
+  h.files.set(target,directory);h.p.pendingAudio={path:target,blob:new Blob(['pending audio']),ext:'webm'};
+  await h.p.saveRecording();assert.equal(h.p.pendingAudio,null);assert.equal(h.files.get(target),directory);
+  assert.equal(audioFiles(h).length,1);assert.equal(new TextDecoder().decode(audioFiles(h)[0].data),'pending audio');
 });
 test('verification mismatch retains pending bytes and retry checks the same file',async()=>{
   const h=host({readMismatch:true});await h.open();h.p.pendingAudio={blob:new Blob(['synthetic']),ext:'webm'};

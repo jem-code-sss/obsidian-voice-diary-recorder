@@ -20,10 +20,11 @@ async function ensureFolder(vault,value){
   }
   return folder;
 }
-function recordingName(extension){
+function recordingName(extension,recordedAt=Date.now()){
   if(!/^(m4a|webm|ogg|wav)$/.test(extension))throw new DiaryError('mime','录音格式不受支持，音频仍在内存');
   const id=globalThis.crypto.randomUUID();
-  const now=new Date(),pad=n=>String(n).padStart(2,'0');
+  const now=new Date(recordedAt),pad=n=>String(n).padStart(2,'0');
+  if(!Number.isFinite(now.getTime()))throw new DiaryError('recording-time','录音开始时间无效，音频仍在内存');
   return `voice-${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}-${id}.${extension}`;
 }
 function equalBytes(left,right){

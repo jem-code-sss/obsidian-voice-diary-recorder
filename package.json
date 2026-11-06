@@ -1,11 +1,13 @@
 {
   "name": "obsidian-voice-diary-recorder",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "private": true,
   "license": "MIT",
   "scripts": {
     "build": "node scripts/build.mjs",
     "test": "node scripts/build.mjs && node --test tests/*.test.cjs"
   },
-  "devDependencies": {"esbuild":"0.25.12"}
+  "devDependencies": {
+    "esbuild": "0.25.12"
+  }
 }
