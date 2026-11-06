@@ -2,7 +2,7 @@
 
 [English](README.md) | 简体中文
 
-在 Obsidian 中录音并保存原始音频，配合电脑端 [Voice Diary Processor](https://github.com/jem-code-sss/obsidian-voice-diary) 本地转写。版本 **0.3.2**。
+在 Obsidian 中录音并保存原始音频，配合电脑端 [Voice Diary Processor](https://github.com/jem-code-sss/obsidian-voice-diary) 本地转写。版本 **0.4.0**。
 
 手机只需要 Obsidian、本插件和仓库同步工具。无需 Python、语音模型或 API Key。电脑端另行安装处理插件并准备识别模型；如只需要保存录音，也可以独立使用。
 
@@ -20,7 +20,7 @@
 
 插件已发布到 [Obsidian 官方社区目录](https://community.obsidian.md/plugins/voice-diary-recorder)，当前审核状态以该页面为准。同时提供手动安装包。
 
-1. 从 [0.3.2 Release](https://github.com/jem-code-sss/obsidian-voice-diary-recorder/releases/tag/0.3.2) 下载 `voice-diary-recorder-v0.3.2.zip` 并解压。
+1. 从 [0.4.0 Release](https://github.com/jem-code-sss/obsidian-voice-diary-recorder/releases/tag/0.4.0) 下载 `voice-diary-recorder-v0.4.0.zip` 并解压。
 2. 将 `voice-diary-recorder` 文件夹放入仓库的 `.obsidian/plugins/`，保持 `main.js`、`manifest.json`、`styles.css` 在该文件夹内。使用自定义配置目录时选择对应的 `plugins` 目录。
 3. 重启 Obsidian，在第三方插件设置中启用 **Voice Diary Recorder**。
 4. 在插件设置中应用录音保存目录。新装默认 `Voice Diary/Recordings`；请与电脑处理插件的录音目录保持一致。
@@ -31,6 +31,18 @@
 
 点击手机悬浮麦克风、侧边栏麦克风，或执行「开始／停止录音」命令。再次点击结束，插件保存原始音频。文件名按录音开始时刻和完整 UUID 自动生成，延迟保存或重试仍保留开始时刻；扩展名与设备实际提供的录音格式匹配。配套 Processor 以该时间划分日记日期，凌晨 04:00 为一天起点，命名设置见 [电脑端指南](https://github.com/jem-code-sss/obsidian-voice-diary/blob/main/README.zh-CN.md#日记命名与日期归属)。
 
+### 录制待办
+
+点击独立的清单图标，或执行「录制待办：开始／停止」，即可口述「明天买牛奶，下周整理照片」这样的计划。原麦克风入口仍用于日记；同一时间只能录一段，请先结束并保存后再开始另一段。
+
+待办录音生成 `todo-…` 音频及同目录 `<音频文件名>.voice.json` 时间清单。两者均须保存、同步完整，不能在同步规则中忽略 `.json`。电脑请配合 **Processor 0.4.0 或更新版本**，它会核对音频和清单后再提取；手机不转写，也不调用 API。备份或移动时保留这对文件。
+
+时间清单固定真实录音开始时刻、当地日期、时区及音频指纹。「明天」按真实录音日期解释：11 月 7 日 03:59 的待办说「明天」，指 11 月 8 日；同一时刻录的日记虽归 11 月 6 日，也不影响待办。延迟同步、保存和重试不改日期；「下周」表示下周一至周日，不擅自设置截止日。
+
+电脑将待办笔记保存在可配置目录，默认 `Voice Diary/Tasks`。把这个目录同步回手机，即可打开 Markdown 笔记并直接勾选；明天、下周、待确认和全部未完成查看界面属于电脑处理端。模糊表达需人工确认，插件不创建日历事件或系统提醒。更多说明见 [语音待办指南](https://github.com/jem-code-sss/obsidian-voice-diary/blob/main/docs/VOICE-TODOS.md)。
+
+### 保存与中断
+
 录音目录支持中文、空格和多级路径，须填写仓库内的相对目录。输入后点击「应用」才生效，不会移动历史录音；录音中或音频待保存时不能更改目录。
 
 手机录音时请保持 Obsidian 在前台。切后台、锁屏或麦克风中断时结束本段并尝试保存，提示约 4 秒后消失。返回前台不会自动重新收音，请重新点击麦克风。系统冻结或强杀可能来不及保存，本插件不支持后台持续录音。
@@ -39,11 +51,13 @@
 
 保存后会逐字节核对完整录音。若失败写入留下截断文件，或目标路径被不同内容占用，插件保留该文件，用含完整 UUID 的新文件名另存完整音频。若宿主已保存成功但回报错误，核对一致后沿用已完成的文件。先确认另存文件可完整回放，再处理异常文件；音频仍待保存时不要退出应用。
 
-可使用 Syncthing、Obsidian Sync 或其他仓库同步工具。插件本身不提供同步服务，也不依赖特定工具。先确认手机音频已保存，再等待同步到电脑；电脑处理端应监听同一录音目录，并只在一台电脑开启自动处理。
+可使用 Syncthing、Obsidian Sync 或其他仓库同步工具。插件本身不提供同步服务，也不依赖特定工具。先确认手机音频已保存；待办还须保存并同步 `.voice.json`。电脑处理端应监听同一录音目录，日记与待办笔记目录也须同步回手机，并只在一台电脑开启自动处理。
 
 ## 隐私
 
 插件没有联网接口、模型下载或转写功能，不调用 API。录音文件位于你选择的仓库目录，会受仓库同步与备份规则影响。录音目录设置保存在 Obsidian 本设备存储中。文件名与字节校验可减少误覆盖风险，不能阻止已被入侵的宿主或有仓库访问权限的其他插件修改文件。详细说明见 [PRIVACY.md](PRIVACY.md)。
+
+待办时间清单同样参与同步，含录音编号、时间、时区、音频文件名、大小与指纹，不含正文或 API Key。它仍属于个人录音数据；指纹不是加密或来源认证。分享仓库或反馈时请检查音频、清单与成品笔记。
 
 ## 开发
 

@@ -2,5 +2,6 @@
 .vdr-mic { position:fixed; right:22px; bottom:calc(85px + env(safe-area-inset-bottom)); width:54px; height:54px; border-radius:50%; z-index:100; background:var(--interactive-accent); color:var(--text-on-accent); box-shadow:0 3px 12px #0004; }
 .vdr-mic.is-recording { background:var(--color-red); }
 .vdr-mic svg { width:24px; height:24px; }
+.vdr-todo-mic { right:86px; }
 .vdr-indicator { position:fixed; right:22px; bottom:calc(145px + env(safe-area-inset-bottom)); z-index:100; max-width:calc(100vw - 44px); border-radius:8px; background:var(--background-primary); color:var(--text-normal); padding:6px 10px; box-shadow:0 2px 8px #0003; font-size:13px; }
 .vdr-indicator:empty { display:none; }

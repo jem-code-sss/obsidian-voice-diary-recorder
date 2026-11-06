@@ -1,5 +1,6 @@
 const {Plugin,PluginSettingTab,Setting,Notice,Platform,setIcon}=require('obsidian');
 const {AudioRecorder}=require('./recorder');
+const {pinCapture,captureLabel,saveRecordingMetadata}=require('./capture');
 const {DEFAULT_FOLDER,DiaryError,safeMessage,folderPath,ensureFolder,recordingName,equalBytes}=require('./helpers');
 const SETTINGS_KEY='voice-diary-recorder:settings';
 const INTERRUPTION={background:'切后台或锁屏',muted:'麦克风暂时无法收声',paused:'录音被系统暂停',device:'录音设备中断'};
@@ -22,10 +23,13 @@ module.exports=class VoiceDiaryRecorder extends Plugin{
     this.recorder=new AudioRecorder(reason=>void this.interruptRecording(reason));
     this.addSettingTab(new RecorderSettings(this.app,this));
     this.ribbon=this.addRibbonIcon('mic','语音录音：开始／停止',()=>void this.toggleRecording());
+    this.todoRibbon=this.addRibbonIcon('clipboard-list','录制待办：开始／停止',()=>void this.toggleRecording('todo'));
     this.status=this.addStatusBarItem();this.status.addClass('vdr-status');this.status.onclick=()=>void this.toggleRecording();
     if(this.mobile){
       this.fab=document.body.createEl('button',{cls:'vdr-mic',attr:{type:'button','aria-label':'开始录音'}});
       this.fab.onclick=()=>void this.toggleRecording();
+      this.todoFab=document.body.createEl('button',{cls:'vdr-mic vdr-todo-mic',attr:{type:'button','aria-label':'录制待办'}});
+      this.todoFab.onclick=()=>void this.toggleRecording('todo');
       this.indicator=document.body.createEl('div',{cls:'vdr-indicator',attr:{'aria-live':'polite'}});
       this.registerDomEvent(document,'visibilitychange',()=>{
         if(document.visibilityState==='hidden')void this.interruptRecording('background');else this.showInterruption();
@@ -33,6 +37,7 @@ module.exports=class VoiceDiaryRecorder extends Plugin{
       this.registerDomEvent(window,'pagehide',()=>void this.interruptRecording('background'));
     }
     this.addCommand({id:'record',name:'开始／停止录音',callback:()=>void this.toggleRecording()});
+    this.addCommand({id:'record-todo',name:'录制待办：开始／停止',callback:()=>void this.toggleRecording('todo')});
     this.addCommand({id:'save-recording',name:'重试保存录音',callback:()=>void this.saveRecording().catch(error=>new Notice(safeMessage(error),10000))});
     this.registerInterval(window.setInterval(()=>this.updateStatus(),1000));this.updateStatus();
   }
@@ -54,7 +59,7 @@ module.exports=class VoiceDiaryRecorder extends Plugin{
     try{await this.persist();}catch(error){this.settings.folder=previous;throw new DiaryError('settings','录音目录保存失败，仍使用原目录，请检查本机存储');}
     new Notice('录音目录已应用；请确保手机和电脑处理端使用相同目录',6000);return next;
   }
-  async toggleRecording(){
+  async toggleRecording(mode='diary'){
     if(this.closed||this.recordingBusy||this.recordingStop||this.saving)return;
     if(this.folderTask){new Notice('正在应用录音目录，请稍候再开始');return;}
     this.recordingBusy=true;
@@ -64,9 +69,10 @@ module.exports=class VoiceDiaryRecorder extends Plugin{
       else{
         if(this.mobile&&document.visibilityState==='hidden')throw new DiaryError('background','请回到 Obsidian 前台再开始录音');
         this.recordFolder=folderPath(this.settings.folder);this.interruption=null;this.interruptionShown=false;
-        const starting=this.recorder.start();this.updateStatus();await starting;
+        this.recordMode=mode==='todo'?'todo':'diary';
+        const starting=this.recorder.start(this.recordMode);this.updateStatus();await starting;
         if(this.closed||this.mobile&&document.visibilityState==='hidden')await this.interruptRecording('background');
-        if(!this.closed&&this.recorder.state==='recording')new Notice('录音开始，再次点击麦克风即可保存；手机请保持前台',4000);
+        if(!this.closed&&this.recorder.state==='recording')new Notice(this.recordMode==='todo'?`待办录音开始：${captureLabel(this.recorder.session.capture)}。明天、下周按此日期解释；再次点击保存，手机请保持前台`:'录音开始，再次点击麦克风即可保存；手机请保持前台',this.recordMode==='todo'?8000:4000);
       }
     }catch(error){new Notice(safeMessage(error),10000);}
     finally{this.recordingBusy=false;this.updateStatus();}
@@ -101,7 +107,7 @@ module.exports=class VoiceDiaryRecorder extends Plugin{
   }
   async commitRecording(){
     const pending=this.pendingAudio;
-    pending.recordedAt??=Date.now();
+    pinCapture(pending,Date.now());
     try{
       const folder=await ensureFolder(this.app.vault,this.recordFolder||this.settings.folder);
       const bytes=await pending.blob.arrayBuffer();
@@ -110,7 +116,7 @@ module.exports=class VoiceDiaryRecorder extends Plugin{
       // A failed write or a sync conflict may leave a different file at the
       // pinned path. Keep that file and save the pending audio under a new name.
       for(let attempt=0;attempt<3;attempt++){
-        pending.path||=`${folder}/${recordingName(pending.ext,pending.recordedAt)}`;
+        pending.path||=`${folder}/${recordingName(pending.ext,pending)}`;
         file=this.app.vault.getAbstractFileByPath(pending.path);
         if(!file)break;
         let matches=false;
@@ -127,8 +133,9 @@ module.exports=class VoiceDiaryRecorder extends Plugin{
       }
       if(Array.isArray(file.children)||!equalBytes(await this.app.vault.readBinary(file),bytes))
         throw new DiaryError('save','录音保存校验失败，音频仍在内存；请重试保存，原目标内容不一致时会自动另存新文件');
+      if(pending.mode==='todo')await saveRecordingMetadata(this.app.vault,pending,bytes,pending.path);
       if(this.pendingAudio===pending)this.pendingAudio=null;
-      new Notice(`录音已保存${pending.recovered?'；已另存新文件，原目标已保留':''}${pending.interruption?`；${pending.interruption}，本段已结束`:''}${pending.partial?'；末尾可能不完整':''}`,4000);
+      new Notice(`${pending.mode==='todo'?'待办录音及时间清单':'录音'}已保存${pending.recovered?'；已另存新文件，原目标已保留':''}${pending.interruption?`；${pending.interruption}，本段已结束`:''}${pending.partial?'；末尾可能不完整':''}`,4000);
     }catch(error){
       new Notice('录音尚未保存，音频仍在内存。请检查目录权限并重试保存，暂勿退出 Obsidian',12000);throw error;
     }
@@ -142,15 +149,17 @@ module.exports=class VoiceDiaryRecorder extends Plugin{
   updateStatus(){
     if(!this.recorder)return;
     const recording=this.recorder.state==='recording',seconds=recording?Math.max(0,Math.floor((Date.now()-this.recorder.startedAt)/1000)):0;
-    const label=recording?`录音 ${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')} · 点击保存`:
+    const label=recording?`${this.recordMode==='todo'?'待办录音':'录音'} ${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')} · 点击保存`:
       this.pendingAudio?'录音待保存 · 点击重试':this.recorder.state==='starting'?'正在请求麦克风…':this.recordingBusy||this.recordingStop||this.saving?'正在保存录音…':'语音录音';
     this.status?.setText(label);
     for(const button of [this.ribbon,this.fab])if(button){setIcon(button,recording?'square':'mic');button.setAttribute('aria-label',label);}
+    for(const button of [this.todoRibbon,this.todoFab])if(button){setIcon(button,recording?'square':'clipboard-list');button.setAttribute('aria-label',recording||this.pendingAudio?label:'录制待办');}
     this.fab?.classList.toggle('is-recording',recording);
+    this.todoFab?.classList.toggle('is-recording',recording&&this.recordMode==='todo');
     this.indicator?.setText(recording||this.pendingAudio||this.recordingBusy||this.saving?label:'');
   }
   onunload(){
-    this.closed=true;this.fab?.remove();this.indicator?.remove();
+    this.closed=true;this.fab?.remove();this.todoFab?.remove();this.indicator?.remove();
     if(!this.recorder)return;
     this.recorder.cancelled=true;
     this.unloadTask=(async()=>{
@@ -167,6 +176,7 @@ class RecorderSettings extends PluginSettingTab{
     const p=this.plugin,c=this.containerEl;c.empty();
     c.createEl('h2',{text:'Voice Diary Recorder'});
     c.createEl('p',{text:'只录音并保存原始音频，无需 Python、识别模型或 API。通过仓库同步交给电脑处理端转写。'});
+    c.createEl('p',{text:'“录制待办”会一同保存录音时间清单，用于电脑端解释明天、下周；请同步音频旁的 .voice.json 文件。录音期间点击任一录音按钮均结束当前片段。'});
     let draft=this.draft??p.settings.folder,input;
     new Setting(c).setName('录音保存目录').setDesc('仓库内相对目录，默认 Voice Diary/Recordings。请和电脑处理端设置一致，输入后点击应用。')
       .addText(text=>{input=text;text.setValue(draft).onChange(value=>{draft=value;this.draft=value;});})

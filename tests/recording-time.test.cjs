@@ -23,7 +23,7 @@ function engineHost(clock,controls={}){
     requestData(){this.ondataavailable?.({data:new Blob(['recorded speech'])});}
     stop(){this.state='inactive';if(!controls.delayStop)this.onstop?.();}
   }
-  const context={module:{exports:{}},require:()=>require('../src/helpers'),Blob,Date:clockDate(clock),MediaRecorder,
+  const context={module:{exports:{}},require:name=>name==='./capture'?require('../src/capture'):require('../src/helpers'),Blob,Date:clockDate(clock),MediaRecorder,
     navigator:{mediaDevices:{async getUserMedia(){if(controls.permission)await controls.permission;return{getTracks:()=>[{stop(){}}]};}}},
     setTimeout(callback){timers.push(callback);return timers.length;},clearTimeout(){}};
   vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../src/recorder.js'),'utf8'),context);

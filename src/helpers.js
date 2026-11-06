@@ -1,3 +1,4 @@
+const {captureName}=require('./capture');
 const DEFAULT_FOLDER='Voice Diary/Recordings';
 class DiaryError extends Error {constructor(code,message){super(message);this.code=code;}}
 const safeMessage=error=>error instanceof DiaryError?error.message:'操作未完成，请检查麦克风权限、存储空间和目录权限；录音保留待重试';
@@ -22,10 +23,8 @@ async function ensureFolder(vault,value){
 }
 function recordingName(extension,recordedAt=Date.now()){
   if(!/^(m4a|webm|ogg|wav)$/.test(extension))throw new DiaryError('mime','录音格式不受支持，音频仍在内存');
-  const id=globalThis.crypto.randomUUID();
-  const now=new Date(recordedAt),pad=n=>String(n).padStart(2,'0');
-  if(!Number.isFinite(now.getTime()))throw new DiaryError('recording-time','录音开始时间无效，音频仍在内存');
-  return `voice-${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}-${id}.${extension}`;
+  try{return captureName(recordedAt&&typeof recordedAt==='object'&&'recordedAt' in recordedAt?recordedAt:{recordedAt:Number(recordedAt)},extension);}
+  catch{throw new DiaryError('recording-time','录音开始时间无效，音频仍在内存');}
 }
 function equalBytes(left,right){
   const a=new Uint8Array(left),b=new Uint8Array(right);

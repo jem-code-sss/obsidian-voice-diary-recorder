@@ -70,9 +70,10 @@ async function settle(p){await p.recordingStop;await p.saving;await Promise.reso
 
 test('compiled mobile plugin loads with obsidian as its only external runtime import',async()=>{
   const h=host();await h.open();assert.deepEqual(h.requires,['obsidian']);assert.equal(h.p.settings.folder,'Voice Diary/Recordings');
-  assert.equal(h.commands.length,2);assert.ok(h.p.fab);assert.equal(h.p.domEvents.length,2);
+  assert.equal(h.commands.length,3);assert.ok(h.p.fab);assert.ok(h.p.todoFab);assert.equal(h.p.domEvents.length,2);
+  assert.ok(h.commands.some(command=>command.id==='record-todo'));assert.equal(h.p.todoFab.icon,'clipboard-list');
   assert.deepEqual(h.saved,[{key:NEW_KEY,data:{folder:'Voice Diary/Recordings'}}]);
-  h.p.onunload();await h.p.unloadTask;assert.equal(h.p.fab.removed,true);
+  h.p.onunload();await h.p.unloadTask;assert.equal(h.p.fab.removed,true);assert.equal(h.p.todoFab.removed,true);
 });
 test('all runtime source and compiled imports are browser compatible and do not contain network clients',()=>{
   const sources=fs.readdirSync(path.join(__dirname,'../src')).map(file=>fs.readFileSync(path.join(__dirname,'../src',file),'utf8')).join('\n');

@@ -18,6 +18,9 @@
     "scripts/package.ps1",
     "scripts/release-files.json",
     "tests/recorder.test.cjs",
-    "tests/recording-time.test.cjs"
+    "tests/recording-time.test.cjs",
+    "src/capture.js",
+    "tests/capture.test.cjs",
+    "tests/todo-recording.test.cjs"
   ]
 }
